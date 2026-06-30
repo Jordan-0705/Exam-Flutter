@@ -242,15 +242,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTransactionItem(Transaction transaction) {
-    String displayDescription = transaction.description;
-    if (transaction.type == TransactionType.transfer) {
-      if (transaction.isCredit) {
-        displayDescription = 'Recu de ${transaction.description.replaceFirst('Transfert vers ', '')}';
-      } else {
-        displayDescription = 'Envoye a ${transaction.description.replaceFirst('Transfert vers ', '')}';
-      }
-    }
-
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -263,11 +254,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         title: Text(transaction.typeLabel),
         subtitle: Text(
-          displayDescription,
+          transaction.formattedDescription,
           style: AppTheme.bodySmall,
         ),
         trailing: Text(
-          '${transaction.isCredit ? '+' : '-'} ${formatCurrency(transaction.amount.abs())}',
+          '${transaction.isCredit ? '+' : '-'} ${formatCurrency(transaction.absoluteAmount)}',
           style: TextStyle(
             color: transaction.color,
             fontWeight: FontWeight.bold,

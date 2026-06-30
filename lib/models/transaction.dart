@@ -1,5 +1,6 @@
 // lib/models/transaction.dart
 import 'package:flutter/material.dart';
+import 'wallet.dart';
 
 enum TransactionType { deposit, withdrawal, transfer, payment }
 enum TransactionStatus { pending, completed, failed }
@@ -14,8 +15,8 @@ class Transaction {
   final String description;
   final TransactionStatus status;
   final DateTime createdAt;
-  final int? senderWalletId;
-  final int? receiverWalletId;
+  final Wallet? wallet;           // Emetteur
+  final Wallet? receiverWallet;   // Destinataire
 
   Transaction({
     required this.id,
@@ -27,20 +28,25 @@ class Transaction {
     required this.description,
     required this.status,
     required this.createdAt,
-    this.senderWalletId,
-    this.receiverWalletId,
+    this.wallet,
+    this.receiverWallet,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
-    // Récupérer les IDs depuis le JSON
-    int? senderId;
-    int? receiverId;
+    // Recuperer les wallets depuis le JSON
+    Wallet? wallet;
+    Wallet? receiverWallet;
     
-    if (json['sender'] != null) {
-      senderId = json['sender']['id'] ?? json['senderId'];
+    if (json['wallet'] != null) {
+      wallet = Wallet.fromJson(json['wallet']);
     }
-    if (json['receiver'] != null) {
-      receiverId = json['receiver']['id'] ?? json['receiverId'];
+    if (json['receiverWallet'] != null) {
+      receiverWallet = Wallet.fromJson(json['receiverWallet']);
+    }
+    
+    // Si receiverWallet n'existe pas, essayer de le recuperer depuis le champ 'receiver'
+    if (receiverWallet == null && json['receiver'] != null) {
+      receiverWallet = Wallet.fromJson(json['receiver']);
     }
     
     return Transaction(
@@ -53,8 +59,8 @@ class Transaction {
       description: json['description'] ?? '',
       status: _parseTransactionStatus(json['status']),
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      senderWalletId: senderId,
-      receiverWalletId: receiverId,
+      wallet: wallet,
+      receiverWallet: receiverWallet,
     );
   }
 
@@ -77,25 +83,31 @@ class Transaction {
     }
   }
 
+  // Determiner si c'est un credit ou un debit
   bool get isCredit {
     switch (type) {
       case TransactionType.deposit:
         return true;
       case TransactionType.transfer:
-        // Si c'est un transfert, c'est un crédit si le walletId correspond au receiver
-        // ou si le montant est positif (dans le cas où l'API renvoie un montant positif)
-        if (receiverWalletId != null && receiverWalletId == walletId) {
+        // Si on est le destinataire, c'est un credit
+        if (receiverWallet != null && receiverWallet!.id == walletId) {
           return true;
         }
-        if (senderWalletId != null && senderWalletId == walletId) {
+        // Si on est l'emetteur, c'est un debit
+        if (wallet != null && wallet!.id == walletId) {
           return false;
         }
-        // Fallback : si le montant est positif, c'est un crédit
+        // Fallback : si le montant est positif, c'est un credit
         return amount > 0;
       case TransactionType.payment:
       case TransactionType.withdrawal:
         return false;
     }
+  }
+
+  // Montant absolu (positif)
+  double get absoluteAmount {
+    return amount.abs();
   }
 
   String get typeLabel {
@@ -111,5 +123,33 @@ class Transaction {
   Color get color {
     if (status == TransactionStatus.failed) return Colors.red.shade300;
     return isCredit ? Colors.green.shade600 : Colors.red.shade600;
+  }
+
+  // Description formatee pour l'affichage
+  String get formattedDescription {
+    switch (type) {
+      case TransactionType.transfer:
+        if (isCredit && receiverWallet != null) {
+          return 'Recu de ${_formatPhone(receiverWallet!.phoneNumber)}';
+        } else if (!isCredit && wallet != null) {
+          return 'Envoye a ${_formatPhone(wallet!.phoneNumber)}';
+        }
+        return description;
+      default:
+        return description;
+    }
+  }
+
+  // Formater le numero de telephone pour l'affichage
+  String _formatPhone(String phone) {
+    if (phone.isEmpty) return phone;
+    final cleaned = phone.replaceAll(RegExp(r'[\s\-]'), '');
+    if (cleaned.length >= 13 && cleaned.startsWith('221')) {
+      return '+${cleaned.substring(0, 3)} ${cleaned.substring(3, 5)} ${cleaned.substring(5, 8)} ${cleaned.substring(8, 10)} ${cleaned.substring(10, 12)}';
+    }
+    if (cleaned.length >= 12 && cleaned.startsWith('221')) {
+      return '+${cleaned.substring(0, 3)} ${cleaned.substring(3, 5)} ${cleaned.substring(5, 8)} ${cleaned.substring(8, 10)} ${cleaned.substring(10)}';
+    }
+    return phone;
   }
 }
