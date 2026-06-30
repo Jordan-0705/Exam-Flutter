@@ -33,7 +33,6 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
-    // Recuperer les wallets depuis le JSON
     Wallet? wallet;
     Wallet? receiverWallet;
     
@@ -44,14 +43,19 @@ class Transaction {
       receiverWallet = Wallet.fromJson(json['receiverWallet']);
     }
     
-    // Si receiverWallet n'existe pas, essayer de le recuperer depuis le champ 'receiver'
     if (receiverWallet == null && json['receiver'] != null) {
       receiverWallet = Wallet.fromJson(json['receiver']);
     }
     
+    // 🔥 Recuperer walletId depuis le wallet si disponible
+    int walletId = json['walletId'] ?? 0;
+    if (walletId == 0 && wallet != null) {
+      walletId = wallet.id;
+    }
+
     return Transaction(
       id: json['id'] ?? 0,
-      walletId: json['walletId'] ?? json['wallet']?['id'] ?? 0,
+      walletId: walletId,
       type: _parseTransactionType(json['type']),
       amount: (json['amount'] ?? 0).toDouble(),
       fee: (json['fee'] ?? 0).toDouble(),
@@ -83,22 +87,21 @@ class Transaction {
     }
   }
 
-  // Determiner si c'est un credit ou un debit
   bool get isCredit {
     switch (type) {
       case TransactionType.deposit:
         return true;
       case TransactionType.transfer:
-        // Si on est le destinataire, c'est un credit
+        // Si receiverWallet existe et que son id correspond au walletId, c'est un credit
         if (receiverWallet != null && receiverWallet!.id == walletId) {
           return true;
         }
-        // Si on est l'emetteur, c'est un debit
+        // Si wallet existe et que son id correspond au walletId, c'est un debit
         if (wallet != null && wallet!.id == walletId) {
           return false;
         }
-        // Fallback : si le montant est positif, c'est un credit
-        return amount > 0;
+        // Fallback : vérifier si le walletId correspond au receiverWallet
+        return false;
       case TransactionType.payment:
       case TransactionType.withdrawal:
         return false;
@@ -125,7 +128,7 @@ class Transaction {
     return isCredit ? Colors.green.shade600 : Colors.red.shade600;
   }
 
-  // Description formatee pour l'affichage
+  // Description formatee
   String get formattedDescription {
     switch (type) {
       case TransactionType.transfer:
@@ -133,6 +136,8 @@ class Transaction {
           return 'Recu de ${_formatPhone(receiverWallet!.phoneNumber)}';
         } else if (!isCredit && wallet != null) {
           return 'Envoye a ${_formatPhone(wallet!.phoneNumber)}';
+        } else if (isCredit && wallet != null) {
+          return 'Recu de ${_formatPhone(wallet!.phoneNumber)}';
         }
         return description;
       default:
@@ -140,7 +145,6 @@ class Transaction {
     }
   }
 
-  // Formater le numero de telephone pour l'affichage
   String _formatPhone(String phone) {
     if (phone.isEmpty) return phone;
     final cleaned = phone.replaceAll(RegExp(r'[\s\-]'), '');
