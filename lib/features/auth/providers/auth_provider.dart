@@ -41,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       // Normaliser le numéro de téléphone
       final normalizedPhone = PhoneFormatter.normalizePhone(phone.trim());
-      print('🔐 Tentative de connexion avec: $normalizedPhone');
+      print('Tentative de connexion avec: $normalizedPhone');
       
       final wallet = await _apiService.getWallet(normalizedPhone);
       _userPhone = normalizedPhone;
