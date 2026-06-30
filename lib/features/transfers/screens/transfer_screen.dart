@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:exam_flutter/core/theme/app_theme.dart';
 import 'package:exam_flutter/core/utils/formatters.dart';
-import 'package:exam_flutter/core/utils/validators.dart';
 import 'package:exam_flutter/core/widgets/loading_widget.dart';
 import 'package:exam_flutter/features/transfers/providers/transfer_provider.dart';
 import 'package:exam_flutter/features/auth/providers/auth_provider.dart';
