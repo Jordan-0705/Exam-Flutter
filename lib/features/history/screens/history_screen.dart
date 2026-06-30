@@ -26,12 +26,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadHistory();
-  }
-
   Future<void> _loadHistory() async {
     final authProvider = context.read<AuthProvider>();
     final historyProvider = context.read<HistoryProvider>();
@@ -64,7 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const PopupMenuItem(
                 value: TransactionType.deposit,
-                child: Text('Dépôts'),
+                child: Text('Depots'),
               ),
               const PopupMenuItem(
                 value: TransactionType.withdrawal,
@@ -117,7 +111,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Vos transactions apparaîtront ici',
+                      'Vos transactions apparaitront ici',
                       style: TextStyle(color: Colors.grey),
                     ),
                   ],
@@ -140,11 +134,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildTransactionItem(Transaction transaction) {
+    String displayDescription = transaction.description;
+    if (transaction.type == TransactionType.transfer) {
+      if (transaction.isCredit) {
+        displayDescription = 'Recu de ${transaction.description.replaceFirst('Transfert vers ', '')}';
+      } else {
+        displayDescription = 'Envoye a ${transaction.description.replaceFirst('Transfert vers ', '')}';
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          // ✅ CORRECTION: withOpacity -> withValues
           backgroundColor: transaction.color.withValues(alpha: 0.2),
           child: Icon(
             transaction.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
@@ -164,7 +166,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ),
                   Text(
-                    transaction.description,
+                    displayDescription,
                     style: AppTheme.bodySmall,
                   ),
                 ],
@@ -180,10 +182,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  'Frais: ${formatCurrency(transaction.fee)}',
-                  style: AppTheme.bodySmall,
-                ),
+                if (transaction.fee > 0)
+                  Text(
+                    'Frais: ${formatCurrency(transaction.fee)}',
+                    style: AppTheme.bodySmall,
+                  ),
               ],
             ),
           ],
@@ -201,13 +204,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
-        //CORRECTION: error_circle -> cancel, retirer const problématique
-        trailing: transaction.status == TransactionStatus.completed
-            ? const Icon(Icons.check_circle, color: Colors.green, size: 20)
-            : transaction.status == TransactionStatus.failed
-                ? const Icon(Icons.cancel, color: Colors.red, size: 20)
-                : const Icon(Icons.pending, color: Colors.orange, size: 20),
+        trailing: _buildStatusIcon(transaction.status),
       ),
     );
+  }
+
+  Widget _buildStatusIcon(TransactionStatus status) {
+    switch (status) {
+      case TransactionStatus.completed:
+        return const Icon(Icons.check_circle, color: Colors.green, size: 20);
+      case TransactionStatus.failed:
+        return const Icon(Icons.cancel, color: Colors.red, size: 20);
+      case TransactionStatus.pending:
+        return const Icon(Icons.pending, color: Colors.orange, size: 20);
+    }
   }
 }

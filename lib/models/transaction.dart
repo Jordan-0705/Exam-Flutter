@@ -14,6 +14,8 @@ class Transaction {
   final String description;
   final TransactionStatus status;
   final DateTime createdAt;
+  final int? senderWalletId;
+  final int? receiverWalletId;
 
   Transaction({
     required this.id,
@@ -25,9 +27,22 @@ class Transaction {
     required this.description,
     required this.status,
     required this.createdAt,
+    this.senderWalletId,
+    this.receiverWalletId,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    // Récupérer les IDs depuis le JSON
+    int? senderId;
+    int? receiverId;
+    
+    if (json['sender'] != null) {
+      senderId = json['sender']['id'] ?? json['senderId'];
+    }
+    if (json['receiver'] != null) {
+      receiverId = json['receiver']['id'] ?? json['receiverId'];
+    }
+    
     return Transaction(
       id: json['id'] ?? 0,
       walletId: json['walletId'] ?? json['wallet']?['id'] ?? 0,
@@ -38,6 +53,8 @@ class Transaction {
       description: json['description'] ?? '',
       status: _parseTransactionStatus(json['status']),
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      senderWalletId: senderId,
+      receiverWalletId: receiverId,
     );
   }
 
@@ -61,15 +78,32 @@ class Transaction {
   }
 
   bool get isCredit {
-    return type == TransactionType.deposit || 
-           (type == TransactionType.transfer && amount > 0);
+    switch (type) {
+      case TransactionType.deposit:
+        return true;
+      case TransactionType.transfer:
+        // Si c'est un transfert, c'est un crédit si le walletId correspond au receiver
+        // ou si le montant est positif (dans le cas où l'API renvoie un montant positif)
+        if (receiverWalletId != null && receiverWalletId == walletId) {
+          return true;
+        }
+        if (senderWalletId != null && senderWalletId == walletId) {
+          return false;
+        }
+        // Fallback : si le montant est positif, c'est un crédit
+        return amount > 0;
+      case TransactionType.payment:
+      case TransactionType.withdrawal:
+        return false;
+    }
   }
 
   String get typeLabel {
     switch (type) {
-      case TransactionType.deposit: return 'Dépôt';
+      case TransactionType.deposit: return 'Depot';
       case TransactionType.withdrawal: return 'Retrait';
-      case TransactionType.transfer: return 'Transfert';
+      case TransactionType.transfer: 
+        return isCredit ? 'Recu' : 'Envoye';
       case TransactionType.payment: return 'Paiement';
     }
   }
