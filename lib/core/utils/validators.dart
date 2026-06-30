@@ -1,29 +1,36 @@
-bool isValidPhone(String phone) {
-  final cleaned = phone.replaceAll(RegExp(r'[\s\-+]'), '');
-  // Accepte: 770000001, 221770000001, +221770000001
-  return RegExp(r'^(?:77[0-9]{7}|22177[0-9]{7})$').hasMatch(cleaned);
-}
+import 'formatters.dart';
 
-bool isValidEmail(String email) {
-  return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-}
-
-String? validatePhone(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'Veuillez entrer un numéro de téléphone';
+class Validators {
+  static String? validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer un numero de telephone';
+    }
+    
+    final normalized = PhoneFormatter.normalizePhone(value);
+    if (!PhoneFormatter.isValidPhone(normalized)) {
+      return 'Numero de telephone invalide';
+    }
+    return null;
   }
-  if (!isValidPhone(value)) {
-    return 'Numéro de téléphone invalide';
+  
+  static String? validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer un email';
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+      return 'Email invalide';
+    }
+    return null;
   }
-  return null;
-}
-
-String? validateEmail(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'Veuillez entrer un email';
+  
+  static String? validateAmount(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Veuillez entrer un montant';
+    }
+    final amount = double.tryParse(value.trim());
+    if (amount == null || amount <= 0) {
+      return 'Montant invalide';
+    }
+    return null;
   }
-  if (!isValidEmail(value)) {
-    return 'Email invalide';
-  }
-  return null;
 }

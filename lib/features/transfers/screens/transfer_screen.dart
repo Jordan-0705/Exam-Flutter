@@ -244,8 +244,9 @@ class _TransferScreenState extends State<TransferScreen> {
       return;
     }
 
-    if (!isValidPhone(recipient)) {
-      setState(() => _errorMessage = 'Numéro de téléphone invalide');
+    final normalizedRecipient = PhoneFormatter.normalizePhone(recipient);
+    if (!PhoneFormatter.isValidPhone(normalizedRecipient)) {
+      setState(() => _errorMessage = 'Numero de telephone invalide');
       return;
     }
 
@@ -261,14 +262,14 @@ class _TransferScreenState extends State<TransferScreen> {
     }
 
     // Normaliser le numéro
-    String normalizedRecipient = recipient.replaceAll(RegExp(r'[\s\-]'), '');
-    if (!normalizedRecipient.startsWith('+')) {
-      if (normalizedRecipient.startsWith('77')) {
-        normalizedRecipient = '+221$normalizedRecipient';
-      } else if (normalizedRecipient.startsWith('221')) {
-        normalizedRecipient = '+$normalizedRecipient';
-      }
-    }
+    // String normalizedRecipient = recipient.replaceAll(RegExp(r'[\s\-]'), '');
+    // if (!normalizedRecipient.startsWith('+')) {
+    //   if (normalizedRecipient.startsWith('77')) {
+    //     normalizedRecipient = '+221$normalizedRecipient';
+    //   } else if (normalizedRecipient.startsWith('221')) {
+    //     normalizedRecipient = '+$normalizedRecipient';
+    //   }
+    // }
 
     setState(() {
       _isLoading = true;

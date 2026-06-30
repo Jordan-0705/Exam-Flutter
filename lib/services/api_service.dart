@@ -5,8 +5,8 @@ import 'package:exam_flutter/models/transaction.dart';
 import 'package:exam_flutter/models/facture.dart';
 
 class ApiService {
-  // static const String baseUrl = 'http://10.0.2.2:8080'; // Pour émulateur Android
-  static const String baseUrl = 'http://localhost:8080'; // Pour iOS
+  // static const String baseUrl = 'http://10.0.2.2:8080';
+  static const String baseUrl = 'http://localhost:8080';
   
   final http.Client _client = http.Client();
 
@@ -20,8 +20,10 @@ class ApiService {
   // 1. WALLET ENDPOINTS
   // ============================================
 
-  // 1.1 Get wallet by phone
+  // 1. WALLET ENDPOINTS
+
   Future<Wallet> getWallet(String phone) async {
+    // Le numéro est déjà normalisé par AuthProvider
     final response = await _client.get(
       Uri.parse('$baseUrl/api/wallets/$phone'),
       headers: _headers,
@@ -30,11 +32,10 @@ class ApiService {
     if (response.statusCode == 200) {
       return Wallet.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception('Erreur lors de la récupération du portefeuille');
+      throw Exception('Portefeuille non trouve');
     }
   }
 
-  // 1.2 Get balance
   Future<double> getBalance(String phone) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/api/wallets/$phone/balance'),
@@ -44,11 +45,10 @@ class ApiService {
     if (response.statusCode == 200) {
       return double.parse(response.body);
     } else {
-      throw Exception('Erreur lors de la récupération du solde');
+      throw Exception('Erreur lors de la recuperation du solde');
     }
   }
 
-  // 1.3 Get transactions
   Future<List<Transaction>> getTransactions(String phone) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/api/wallets/$phone/transactions'),
@@ -59,11 +59,10 @@ class ApiService {
       final List<dynamic> data = jsonDecode(response.body);
       return data.map((json) => Transaction.fromJson(json)).toList();
     } else {
-      throw Exception('Erreur lors de la récupération de l\'historique');
+      throw Exception('Erreur lors de la recuperation de l\'historique');
     }
   }
 
-  // 1.4 Transfer
   Future<Transaction> transfer({
     required String senderPhone,
     required String receiverPhone,

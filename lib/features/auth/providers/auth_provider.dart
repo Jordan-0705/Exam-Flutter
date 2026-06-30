@@ -1,7 +1,9 @@
+// lib/features/auth/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:exam_flutter/services/api_service.dart';
 import 'package:exam_flutter/services/storage_service.dart';
 import 'package:exam_flutter/models/wallet.dart';
+import 'package:exam_flutter/core/utils/formatters.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -37,13 +39,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final wallet = await _apiService.getWallet(phone);
-      _userPhone = phone;
+      // Normaliser le numéro de téléphone
+      final normalizedPhone = PhoneFormatter.normalizePhone(phone.trim());
+      print('🔐 Tentative de connexion avec: $normalizedPhone');
+      
+      final wallet = await _apiService.getWallet(normalizedPhone);
+      _userPhone = normalizedPhone;
       _wallet = wallet;
       _walletCode = wallet.code;
       _walletId = wallet.id;
 
-      await StorageService.savePhone(phone);
+      await StorageService.savePhone(normalizedPhone);
       await StorageService.saveWalletCode(wallet.code);
       await StorageService.saveWalletId(wallet.id);
 
@@ -51,25 +57,11 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      print('Erreur de connexion: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
-    }
-  }
-
-  void updateWalletBalance(double newBalance) {
-    if (_wallet != null) {
-      _wallet = Wallet(
-        id: _wallet!.id,
-        phoneNumber: _wallet!.phoneNumber,
-        email: _wallet!.email,
-        code: _wallet!.code,
-        balance: newBalance,
-        currency: _wallet!.currency,
-        createdAt: _wallet!.createdAt,
-      );
-      notifyListeners();
     }
   }
 
@@ -82,7 +74,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateBalance(double newBalance) {
+  void updateWalletBalance(double newBalance) {
     if (_wallet != null) {
       _wallet = Wallet(
         id: _wallet!.id,
